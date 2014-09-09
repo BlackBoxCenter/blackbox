@@ -1,0 +1,17 @@
+# Appends version related properties to System/Rsrc/Strings.odc.
+# The parameters {#XXX} are assumed to be replaced by the build process
+# before executing this script.
+
+DevCompiler.CompileThis ScriptBuild
+
+ScriptBuild.AppendProperty appVersion "{#AppVersion}"
+
+ScriptBuild.AppendProperty appVerName "{#AppVerName}"
+
+ScriptBuild.AppendProperty fileVersion "{#FileVersion}"
+
+ScriptBuild.AppendProperty buildNum "{#BuildNum}"
+
+ScriptBuild.AppendProperty buildDate "{#BuildDate}"
+
+ScriptBuild.AppendProperty commitHash "{#CommitHash}"
