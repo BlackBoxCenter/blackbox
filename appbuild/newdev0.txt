@@ -1,0 +1,21 @@
+# that is the text copy of Interp/Docu/QuickStart.odc
+# to rebuild 'dev0.exe' run:  dev0.exe < "newdev0.txt"
+# the result will be writen to 'newdev0.exe'
+
+DevCompiler.CompileThis Windows Views Strings Stores Services Sequencers Properties Printing Printers Ports Models Meta Mechanisms Math Log Fonts Documents Dialog Dates Converters Controls Controllers Containers 
+
+DevCompiler.CompileThis InterpConsole 
+
+DevCompiler.CompileThis ConsLog ConsCompiler ConsInterp 
+
+DevCompiler.CompileThis InterpHostConsole InterpHostFiles InterpHostFonts InterpHostWindows InterpHostLang InterpHostDates InterpHostPackedFiles InterpHostDialog InterpConfig InterpInit 
+
+DevLinker.Link dos newdev0.exe := Kernel$+ Files HostFiles HostPackedFiles StdLoader 
+
+DevPacker.PackThis newdev0.exe := Code/Init.ocf Host/Code/Console.ocf Code/Console.ocf Host/Code/Lang.ocf Code/Dialog.ocf Host/Code/Fonts.ocf Code/Fonts.ocf Host/Code/Windows.ocf Code/Windows.ocf Code/Ports.ocf Code/Services.ocf Code/Stores.ocf Code/Strings.ocf Code/Math.ocf Code/Sequencers.ocf Code/Models.ocf Code/Views.ocf Code/Log.ocf Code/Converters.ocf Code/Meta.ocf Code/Controllers.ocf Code/Properties.ocf Code/Containers.ocf Code/Mechanisms.ocf Code/Documents.ocf Code/Dates.ocf Code/Printers.ocf Code/Printing.ocf Host/Code/Dates.ocf Host/Code/Dialog.ocf Std/Code/Interpreter.ocf Std/Code/Dialog.ocf Std/Code/Log.ocf Text/Code/Models.ocf Text/Code/Mappers.ocf Text/Code/Rulers.ocf Text/Code/Views.ocf Text/Code/Setters.ocf Text/Code/Controllers.ocf Cons/Code/Log.ocf Code/Config.ocf Cons/Code/Interp.ocf Dev/Code/Commanders.ocf Code/Controls.ocf Std/Code/CFrames.ocf Dev/Code/Compiler.ocf Dev/Code/Markers.ocf Dev/Code/Selectors.ocf Dev/Code/CPM.ocf Dev/Code/CPT.ocf Dev/Code/CPB.ocf Dev/Code/CPP.ocf Dev/Code/CPS.ocf Dev/Code/CPE.ocf Dev/Code/CPV486.ocf Dev/Code/CPH.ocf Dev/Code/CPL486.ocf Dev/Code/CPC486.ocf Std/Code/ETHConv.ocf Host/Code/TextConv.ocf Dev/Code/Linker.ocf Cons/Code/Compiler.ocf Host/Code/Registry.ocf Dev/Code/Debug.ocf Dev/Code/HeapSpy.ocf Dev/Code/ComDebug.ocf 
+
+
+DevCompiler.CompileThis HostFiles HostFonts HostWindows HostPackedFiles HostDialog Config Init 
+
+Kernel.Quit(0)
+
