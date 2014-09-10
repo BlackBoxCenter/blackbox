@@ -32,7 +32,7 @@
 from subprocess import Popen, PIPE, call
 import sys, datetime, fileinput, os.path, argparse
 
-buildDate = datetime.datetime.now().isoformat()
+buildDate = datetime.datetime.now().isoformat()[:19]
 buildDir = "/var/www/tribiq/makeapp"
 bbName = "bb"
 bbDir = buildDir + "/" + bbName
@@ -261,7 +261,7 @@ def incrementBuildNumber():
 def cleanup():
     if not args.test:
         logStep("Cleaning up")
-        shellExec(buildDir, "rm -R " + bbDir)
+        shellExec(buildDir, "rm -R -f " + bbDir)
 
 def renameLog():
     if not args.test:
@@ -334,6 +334,7 @@ appendSystemProperties()
 updateBbscript()
 buildSetupFile()
 buildZipFile()
-incrementBuildNumber() # if not args.test
-cleanup() # if not args.test
-renameLog() # if not args.test
+# if not args.test
+incrementBuildNumber()
+cleanup()
+renameLog()
