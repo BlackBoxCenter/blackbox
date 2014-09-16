@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Automated build of the BlackBox Component Builder for Windows under Linux Debian 7.
+# Python 2.7 script for building the BlackBox Component Builder for Windows under Linux Debian 7.
 # Looks at all branches and puts the output into the branch's output folder 'unstable/<branch>'
 # unless building a final release, which is always put into folder 'stable'.
 #
@@ -33,13 +33,13 @@ from subprocess import Popen, PIPE, call
 import sys, datetime, fileinput, os.path, argparse
 
 buildDate = datetime.datetime.now().isoformat()[:19]
-buildDir = "/var/www/tribiq/makeapp"
+buildDir = "/var/www/zenario/makeapp"
 bbName = "bb"
 bbDir = buildDir + "/" + bbName
 appbuildDir = bbDir + "/appbuild"
 localRepository = "/var/www/git/blackbox.git"
-unstableDir = "/var/www/tribiq/unstable"
-stableDir = "/var/www/tribiq/stable"
+unstableDir = "/var/www/zenario/unstable"
+stableDir = "/var/www/zenario/stable"
 wine = "/usr/local/bin/wine"
 bbscript = "export DISPLAY=:1 && " + wine + " bbscript.exe"
 iscc = "/usr/local/bin/iscc"
