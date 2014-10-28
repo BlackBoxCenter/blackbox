@@ -11,7 +11,28 @@ on the scripting engine introduced in subsystem Script, which is
 not part of the generated BlackBox distribution.
 
 
-For compiling and linking the BlackBox Component Builder:
+For compiling and linking the BlackBox Component Builder from sources:
+
+  1. Download last version of the compiler:
+
+    http://blackboxframework.org/makeapp/bbscript.exe
+
+  2. Prepare 'Win/Rsrc/BlackBox.res' file
+    
+    Open and put version information to 'Win/Rsrc/BlackBox.rc'
+
+    Compile this file:
+
+    - Example for Windows:
+        1) Download and install MinGW: http://www.mingw.org/
+        2) C:\MinGW\bin>windres.exe -i C:\bbcb\Win\Rsrc\BlackBox.rc -o C:\bbcb\Win\Rsrc\BlackBox.res
+
+    - Example for Linux Ubuntu:    
+        1) sudo apt-get install wingw32
+        2) Go to the directory with sources
+        3) /usr/bin/i586-mingw32msvc-windres -i BlackBox.rc -o BlackBox.res
+    
+  3. Run compiler:
 
     bbscript.exe /PAR Dev/Docu/Build-Tool.odc
 
