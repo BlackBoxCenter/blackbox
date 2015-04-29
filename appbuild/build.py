@@ -41,7 +41,7 @@ localRepository = "/var/www/git/blackbox.git"
 unstableDir = "/var/www/zenario/unstable"
 stableDir = "/var/www/zenario/stable"
 wine = "/usr/local/bin/wine"
-bbscript = "export DISPLAY=:1 && " + wine + " bbscript.exe"
+bbscript = "xvfb-run --server-args='-screen 1, 1024x768x24' " + wine + " bbscript.exe"
 iscc = "/usr/local/bin/iscc"
 windres="/usr/bin/i586-mingw32msvc-windres"
 testName = "testbuild"
@@ -170,11 +170,6 @@ def prepareCompileAndLink():
     shellExec(bbDir + "/Win/Rsrc", windres + " -i BlackBox.rc -o BlackBox.res")
     logStep("Preparing bbscript.exe")
     shellExec(buildDir, "cp bbscript.exe " + bbDir + "/")
-    logStep("Starting Xvfb")
-    if os.path.exists("/tmp/.X1-lock"):
-        log("Xvfb is already running: /tmp/.X1-lock exists")
-    else:
-        shellExec(buildDir, "Xvfb :1 &")
 
 def deleteBbFile(name):
     if os.path.exists(bbDir + "/" + name):
