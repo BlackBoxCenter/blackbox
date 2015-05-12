@@ -212,11 +212,11 @@ def appendSystemProperties():
     runbbscript("appbuild/appendProps.txt")
 
 def updateBbscript():
-    if not args.test:
+    if not args.test and branch == "master":
         logStep("Updating bbscript.exe")
         shellExec(bbDir, "mv bbscript.exe " + buildDir + "/")
     else:
-        logStep("Removing bbscript.exe becaue this is a test build")
+        logStep("Removing bbscript.exe")
         shellExec(bbDir, "rm bbscript.exe ")
 
 def buildSetupFile():
