@@ -28,7 +28,7 @@ For compiling and linking the BlackBox Component Builder from sources:
         2) C:\MinGW\bin>windres.exe -i C:\bbcb\Win\Rsrc\BlackBox.rc -o C:\bbcb\Win\Rsrc\BlackBox.res
 
     - Example for Linux Ubuntu:    
-        1) sudo apt-get install wingw32
+        1) sudo apt-get install mingw32
         2) Go to the directory with sources
         3) /usr/bin/i586-mingw32msvc-windres -i BlackBox.rc -o BlackBox.res
     
