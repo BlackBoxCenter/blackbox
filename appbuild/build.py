@@ -224,7 +224,7 @@ def buildSetupFile():
     deleteBbFile("StdLog.txt");
     deleteBbFile("wine_out.txt");
     deleteBbFile("README.txt");
-    shellExec(bbDir, "rm -R Cons Interp Script appbuild", False)
+    shellExec(bbDir, "rm -R Script appbuild")
     shellExec(bbDir, iscc + " - < Win/Rsrc/BlackBox.iss" \
                   + '  "/dAppVersion=' + appVersion
                   + '" "/dAppVerName=' + appVerName
