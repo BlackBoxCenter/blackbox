@@ -30,7 +30,7 @@
 # TODO git checkout reports a message on stderr but it works, so it is ignored
 
 from subprocess import Popen, PIPE, call
-import sys, datetime, fileinput, os.path, argparse
+import sys, datetime, fileinput, os.path, argparse, urllib2, time
 
 buildDate = datetime.datetime.now().isoformat()[:19]
 buildDir = "/var/www/zenario/makeapp"
@@ -41,13 +41,17 @@ localRepository = "/var/www/git/blackbox.git"
 unstableDir = "/var/www/zenario/unstable"
 stableDir = "/var/www/zenario/stable"
 wine = "/usr/local/bin/wine"
-bbscript = "xvfb-run --server-args='-screen 1, 1024x768x24' " + wine + " bbscript.exe"
+xvfb = "xvfb-run --server-args='-screen 1, 1024x768x24' "
+bbscript = xvfb + wine + " bbscript.exe"
+bbchanges = xvfb + wine + " bbchanges.exe /USE " + bbName + " /LOAD ScriptChanges /NOAPPWIN"
 iscc = "/usr/local/bin/iscc"
 windres="/usr/bin/i586-mingw32msvc-windres"
 testName = "testbuild"
 branch = None
 commitHash = None
 logFile = None
+outputNamePrefix = None # until appVersion and build number are known
+buildNumberIncremented = False
 
 parser = argparse.ArgumentParser(description='Build BlackBox')
 parser.add_argument('--verbose', action="store_true", default=False, help='turn verbose output on')
@@ -121,8 +125,9 @@ def logShell(text): # use color green
     log(text, '<font color="#009600">', '</font>')
 
 def shellExec(wd, cmd, stopOnError=True):
-    logShell("cd " + wd + " && " + cmd)
-    (stdout, stderr) = Popen("cd " + wd + " && " + cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()
+    cmd = "cd " + wd + " && " + cmd
+    logShell(cmd)
+    (stdout, stderr) = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()
     log(stdout)
     if stderr == "":
         return stdout
@@ -133,11 +138,33 @@ def shellExec(wd, cmd, stopOnError=True):
     else:
         logErr(stderr)
         logErr("--- build aborted ---")
-        print "--- build aborted ---"
+        print "--- build aborted ---\n"
         incrementBuildNumber() # if not args.test
         cleanup() # if not args.test
         renameLog() # if not args.test
         sys.exit()
+
+def cloneRepo(wd, cmd, stopOnError=True):
+    # like shellExecute but cloning fails sometimes for unknown reasons, so we treat it
+    # separately in order to find out what is going on
+    cmd = "cd " + wd + " && " + cmd
+    for cnt in range(1, 3):
+        logShell(cmd)
+        (stdout, stderr) = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()
+        log(stdout)
+        if stderr == "":
+            return stdout
+        elif not stopOnError:
+            logErr(stderr)
+            logErr("--- error ignored ---")
+            return stdout
+        else:
+            logErr(stderr)
+            logErr("--- cloneRepo failed ---")
+            print "--- cloneRepo failed ---\n"
+            time.sleep(2) # sleep 2 seconds before retry
+    print "severe error when cloning the repository: please inspect manually\n"
+    sys.exit()
 
 def getAppVerName(appVersion):
     x = appVersion
@@ -219,6 +246,27 @@ def updateBbscript():
         logStep("Removing bbscript.exe")
         shellExec(bbDir, "rm bbscript.exe ")
 
+def addChanges():
+    if branch == "master" or args.test:
+        xml_file = bbName + "/blackbox_issues.xml"
+        logStep("downloading " + xml_file + " from Redmine")
+        minusPos = appVersion.find("-")
+        version = appVersion if minusPos < 0 else appVersion[0:minusPos]
+        if version == "1.7":
+            fixed_version_id = "2"
+        #TODO add new versions here or, even better, search fixed_version_id in Redmine
+        else:
+            logErr("unknown fixed_version_id for appVersion " + appVersion)
+            fixed_version_id = "0"
+        # status_id=5 means 'Closed'
+        url = "http://redmine.blackboxframework.org/projects/blackbox/issues.xml?status_id=5&fixed_version_id=" + fixed_version_id + "&offset=0&limit=100"
+        with open(xml_file, 'wb') as out_file:
+            out_file.write(urllib2.urlopen(url).read())
+        logStep("converting to BlackBox_" + appVersion + "_Changes.odc")
+        bbres = call(bbchanges + " >" + bbName + "/wine_out.txt 2>&1", shell=True)
+        logStep("removing file " + xml_file)
+        shellExec(".", "rm " + xml_file)
+
 def buildSetupFile():
     logStep("Building " + outputNamePrefix + "-setup.exe file using InnoSetup")
     deleteBbFile("StdLog.txt");
@@ -246,12 +294,14 @@ def updateCommitHash():
         hashFile.close()
 
 def incrementBuildNumber():
-    if not args.test:
+    global buildNumberIncremented
+    if not buildNumberIncremented:
         logStep("Updating build number to " + str(buildNum + 1))
         numberFile.seek(0)
         numberFile.write(str(buildNum+1))
         numberFile.truncate()
         numberFile.close()
+        buildNumberIncremented = True
 
 def cleanup():
     if not args.test:
@@ -259,14 +309,15 @@ def cleanup():
         shellExec(buildDir, "rm -R -f " + bbDir)
 
 def renameLog():
-    if not args.test:
+    global logFile
+    logFile.close()
+    logFile = None
+    if not args.test and outputNamePrefix != None:
         logStep("Renaming 'logFile.html' to '" + outputNamePrefix + "-buildlog.html'")
-        global logFile
-        logFile.close()
-        logFile = None
         shellExec(unstableDir, "mv logFile.html " + outputPathPrefix + "-buildlog.html")
 
 if args.test:
+    buildNumberIncremented = True # avoid side effect when testing
     unstableDir = buildDir + "/" + testName
     stableDir = unstableDir
     if (os.path.exists(bbDir)):
@@ -296,11 +347,7 @@ log("<h2>Build " + str(buildNum) + " from '" + branch + "' at " + buildDate + "<
 log("<h3>git commit hash: " + commitHash + "</h3>")
 
 logStep("Cloning repository into temporary folder '" + bbName + "'")
-shellExec(buildDir, "git clone " + localRepository + " " + bbDir)
-
-if branch != "master":
-    logStep("Checking out branch '" + branch + "'")
-    shellExec(bbDir, "git checkout " + branch, False)
+cloneRepo(buildDir, "git clone --branch " + branch + " " + localRepository + " " + bbDir)
 
 if not os.path.exists(appbuildDir + "/AppVersion.txt"):
     cleanup() # if not args.test
@@ -327,6 +374,7 @@ buildBbscript()
 compileAndLink() #3
 appendSystemProperties()
 updateBbscript()
+addChanges()
 buildSetupFile()
 buildZipFile()
 # if not args.test
