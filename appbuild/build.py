@@ -31,6 +31,7 @@
 
 from subprocess import Popen, PIPE, call
 import sys, datetime, fileinput, os.path, argparse, urllib2, time
+import xml.etree.ElementTree as ET
 
 buildDate = datetime.datetime.now().isoformat()[:19]
 buildDir = "/var/www/zenario/makeapp"
@@ -246,26 +247,33 @@ def updateBbscript():
         logStep("Removing bbscript.exe")
         shellExec(bbDir, "rm bbscript.exe ")
 
+def get_fixed_version_id(versions_file, target):
+    tree = ET.parse(versions_file)
+    root = tree.getroot()
+    for version in root.findall('version'):
+        if version.findtext('name') == target:
+            return version.findtext('id')
+    return "-1" # unknown
+
 def addChanges():
     if branch == "master" or args.test:
-        xml_file = bbName + "/blackbox_issues.xml"
-        logStep("downloading " + xml_file + " from Redmine")
+        logStep("downloading xml files from Redmine")
+        versions_file = bbName + "/blackbox_versions.xml"
+        issues_file = bbName + "/blackbox_issues.xml"
+        url = "http://redmine.blackboxframework.org/projects/blackbox/versions.xml"
+        with open(versions_file, 'wb') as out_file:
+            out_file.write(urllib2.urlopen(url).read())
         minusPos = appVersion.find("-")
-        version = appVersion if minusPos < 0 else appVersion[0:minusPos]
-        if version == "1.7":
-            fixed_version_id = "2"
-        #TODO add new versions here or, even better, search fixed_version_id in Redmine
-        else:
-            logErr("unknown fixed_version_id for appVersion " + appVersion)
-            fixed_version_id = "0"
-        # status_id=5 means 'Closed'
+        target = appVersion if minusPos < 0 else appVersion[0:minusPos]
+        fixed_version_id = get_fixed_version_id(versions_file, target)
+        # status_id=5 means 'Closed', limit above 100 is not supported by Redmine
         url = "http://redmine.blackboxframework.org/projects/blackbox/issues.xml?status_id=5&fixed_version_id=" + fixed_version_id + "&offset=0&limit=100"
-        with open(xml_file, 'wb') as out_file:
+        with open(issues_file, 'wb') as out_file:
             out_file.write(urllib2.urlopen(url).read())
         logStep("converting to BlackBox_" + appVersion + "_Changes.odc")
         bbres = call(bbchanges + " >" + bbName + "/wine_out.txt 2>&1", shell=True)
-        logStep("removing file " + xml_file)
-        shellExec(".", "rm " + xml_file)
+        logStep("removing xml files")
+        shellExec(".", "rm " + versions_file + " " + issues_file)
 
 def buildSetupFile():
     logStep("Building " + outputNamePrefix + "-setup.exe file using InnoSetup")
