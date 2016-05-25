@@ -44,7 +44,7 @@ stableDir = "/var/www/zenario/stable"
 wine = "/usr/local/bin/wine"
 xvfb = "xvfb-run --server-args='-screen 1, 1024x768x24' "
 bbscript = xvfb + wine + " bbscript.exe"
-bbchanges = xvfb + wine + " bbchanges.exe /USE " + bbName + " /LOAD ScriptChanges /NOAPPWIN"
+bbchanges = xvfb + wine + " " + buildDir + "/bbchanges.exe /USE " + bbDir + " /LOAD ScriptChanges /NOAPPWIN"
 iscc = "/usr/local/bin/iscc"
 windres="/usr/bin/i586-mingw32msvc-windres"
 testName = "testbuild"
@@ -148,6 +148,7 @@ def shellExec(wd, cmd, stopOnError=True):
 def cloneRepo(wd, cmd, stopOnError=True):
     # like shellExecute but cloning fails sometimes for unknown reasons, so we treat it
     # separately in order to find out what is going on
+    # this function is for debugging only; TODO remove when cloneRepo bug is fixed
     cmd = "cd " + wd + " && " + cmd
     for cnt in range(1, 3):
         logShell(cmd)
@@ -163,6 +164,8 @@ def cloneRepo(wd, cmd, stopOnError=True):
             logErr(stderr)
             logErr("--- cloneRepo failed ---")
             print "--- cloneRepo failed ---\n"
+            print "--- stdout=" + stdout + "\n"
+            print "--- stderr=" + stderr + "\n"
             time.sleep(2) # sleep 2 seconds before retry
     print "severe error when cloning the repository: please inspect manually\n"
     sys.exit()
@@ -258,8 +261,8 @@ def get_fixed_version_id(versions_file, target):
 def addChanges():
     if branch == "master" or args.test:
         logStep("downloading xml files from Redmine")
-        versions_file = bbName + "/blackbox_versions.xml"
-        issues_file = bbName + "/blackbox_issues.xml"
+        versions_file = bbDir + "/blackbox_versions.xml"
+        issues_file = bbDir + "/blackbox_issues.xml"
         url = "http://redmine.blackboxframework.org/projects/blackbox/versions.xml"
         with open(versions_file, 'wb') as out_file:
             out_file.write(urllib2.urlopen(url).read())
@@ -270,10 +273,12 @@ def addChanges():
         url = "http://redmine.blackboxframework.org/projects/blackbox/issues.xml?status_id=5&fixed_version_id=" + fixed_version_id + "&offset=0&limit=100"
         with open(issues_file, 'wb') as out_file:
             out_file.write(urllib2.urlopen(url).read())
-        logStep("converting to BlackBox_" + appVersion + "_Changes.odc")
-        bbres = call(bbchanges + " >" + bbName + "/wine_out.txt 2>&1", shell=True)
+        logStep("converting to BlackBox_" + appVersion + "_Changes.odc/.html")
+        bbres = call(bbchanges + " >" + bbDir + "/wine_out.txt 2>&1", shell=True)
         logStep("removing xml files")
         shellExec(".", "rm " + versions_file + " " + issues_file)
+        logStep("moving file BlackBox_" + appVersion + "_Changes.html to outputDir")
+        shellExec(".", "mv " + bbDir + "/BlackBox_" + appVersion + "_Changes.html " + outputPathPrefix + "-changes.html")
 
 def buildSetupFile():
     logStep("Building " + outputNamePrefix + "-setup.exe file using InnoSetup")
