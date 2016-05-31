@@ -145,31 +145,6 @@ def shellExec(wd, cmd, stopOnError=True):
         renameLog() # if not args.test
         sys.exit()
 
-def cloneRepo(wd, cmd, stopOnError=True):
-    # like shellExecute but cloning fails sometimes for unknown reasons, so we treat it
-    # separately in order to find out what is going on
-    # this function is for debugging only; TODO remove when cloneRepo bug is fixed
-    cmd = "cd " + wd + " && " + cmd
-    for cnt in range(1, 3):
-        logShell(cmd)
-        (stdout, stderr) = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()
-        log(stdout)
-        if stderr == "":
-            return stdout
-        elif not stopOnError:
-            logErr(stderr)
-            logErr("--- error ignored ---")
-            return stdout
-        else:
-            logErr(stderr)
-            logErr("--- cloneRepo failed ---")
-            print "--- cloneRepo failed ---\n"
-            print "--- stdout=" + stdout + "\n"
-            print "--- stderr=" + stderr + "\n"
-            time.sleep(2) # sleep 2 seconds before retry
-    print "severe error when cloning the repository: please inspect manually\n"
-    sys.exit()
-
 def getAppVerName(appVersion):
     x = appVersion
     if appVersion.find("-a") >= 0:
@@ -360,7 +335,8 @@ log("<h2>Build " + str(buildNum) + " from '" + branch + "' at " + buildDate + "<
 log("<h3>git commit hash: " + commitHash + "</h3>")
 
 logStep("Cloning repository into temporary folder '" + bbName + "'")
-cloneRepo(buildDir, "git clone --branch " + branch + " " + localRepository + " " + bbDir)
+# option -q suppresses the progress reporting on stderr
+shellExec(buildDir, "git clone -q --branch " + branch + " " + localRepository + " " + bbDir)
 
 if not os.path.exists(appbuildDir + "/AppVersion.txt"):
     cleanup() # if not args.test
