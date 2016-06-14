@@ -30,7 +30,8 @@
 # TODO git checkout reports a message on stderr but it works, so it is ignored
 
 from subprocess import Popen, PIPE, call
-import sys, datetime, fileinput, os.path, argparse
+import sys, datetime, fileinput, os.path, argparse, urllib2, time
+import xml.etree.ElementTree as ET
 
 buildDate = datetime.datetime.now().isoformat()[:19]
 buildDir = "/var/www/zenario/makeapp"
@@ -41,13 +42,17 @@ localRepository = "/var/www/git/blackbox.git"
 unstableDir = "/var/www/zenario/unstable"
 stableDir = "/var/www/zenario/stable"
 wine = "/usr/local/bin/wine"
-bbscript = "xvfb-run --server-args='-screen 1, 1024x768x24' " + wine + " bbscript.exe"
+xvfb = "xvfb-run --server-args='-screen 1, 1024x768x24' "
+bbscript = xvfb + wine + " bbscript.exe"
+bbchanges = xvfb + wine + " " + buildDir + "/bbchanges.exe /USE " + bbDir + " /LOAD ScriptChanges"
 iscc = "/usr/local/bin/iscc"
 windres="/usr/bin/i586-mingw32msvc-windres"
 testName = "testbuild"
 branch = None
 commitHash = None
 logFile = None
+outputNamePrefix = None # until appVersion and build number are known
+buildNumberIncremented = False
 
 parser = argparse.ArgumentParser(description='Build BlackBox')
 parser.add_argument('--verbose', action="store_true", default=False, help='turn verbose output on')
@@ -121,8 +126,9 @@ def logShell(text): # use color green
     log(text, '<font color="#009600">', '</font>')
 
 def shellExec(wd, cmd, stopOnError=True):
-    logShell("cd " + wd + " && " + cmd)
-    (stdout, stderr) = Popen("cd " + wd + " && " + cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()
+    cmd = "cd " + wd + " && " + cmd
+    logShell(cmd)
+    (stdout, stderr) = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True).communicate()
     log(stdout)
     if stderr == "":
         return stdout
@@ -133,7 +139,7 @@ def shellExec(wd, cmd, stopOnError=True):
     else:
         logErr(stderr)
         logErr("--- build aborted ---")
-        print "--- build aborted ---"
+        print "--- build aborted ---\n"
         incrementBuildNumber() # if not args.test
         cleanup() # if not args.test
         renameLog() # if not args.test
@@ -219,6 +225,36 @@ def updateBbscript():
         logStep("Removing bbscript.exe")
         shellExec(bbDir, "rm bbscript.exe ")
 
+def get_fixed_version_id(versions_file, target):
+    tree = ET.parse(versions_file)
+    root = tree.getroot()
+    for version in root.findall('version'):
+        if version.findtext('name') == target:
+            return version.findtext('id')
+    return "-1" # unknown
+
+def addChanges():
+    if branch == "master" or args.test:
+        logStep("downloading xml files from Redmine")
+        versions_file = bbDir + "/blackbox_versions.xml"
+        issues_file = bbDir + "/blackbox_issues.xml"
+        url = "http://redmine.blackboxframework.org/projects/blackbox/versions.xml"
+        with open(versions_file, 'wb') as out_file:
+            out_file.write(urllib2.urlopen(url).read())
+        minusPos = appVersion.find("-")
+        target = appVersion if minusPos < 0 else appVersion[0:minusPos]
+        fixed_version_id = get_fixed_version_id(versions_file, target)
+        # status_id=5 means 'Closed', limit above 100 is not supported by Redmine
+        url = "http://redmine.blackboxframework.org/projects/blackbox/issues.xml?status_id=5&fixed_version_id=" + fixed_version_id + "&offset=0&limit=100"
+        with open(issues_file, 'wb') as out_file:
+            out_file.write(urllib2.urlopen(url).read())
+        logStep("converting to BlackBox_" + appVersion + "_Changes.odc/.html")
+        bbres = call(bbchanges + " >" + bbDir + "/wine_out.txt 2>&1", shell=True)
+        logStep("removing xml files")
+        shellExec(".", "rm " + versions_file + " " + issues_file)
+        logStep("moving file BlackBox_" + appVersion + "_Changes.html to outputDir")
+        shellExec(".", "mv " + bbDir + "/BlackBox_" + appVersion + "_Changes.html " + outputPathPrefix + "-changes.html")
+
 def buildSetupFile():
     logStep("Building " + outputNamePrefix + "-setup.exe file using InnoSetup")
     deleteBbFile("StdLog.txt");
@@ -246,12 +282,14 @@ def updateCommitHash():
         hashFile.close()
 
 def incrementBuildNumber():
-    if not args.test:
+    global buildNumberIncremented
+    if not buildNumberIncremented:
         logStep("Updating build number to " + str(buildNum + 1))
         numberFile.seek(0)
         numberFile.write(str(buildNum+1))
         numberFile.truncate()
         numberFile.close()
+        buildNumberIncremented = True
 
 def cleanup():
     if not args.test:
@@ -259,14 +297,15 @@ def cleanup():
         shellExec(buildDir, "rm -R -f " + bbDir)
 
 def renameLog():
-    if not args.test:
+    global logFile
+    logFile.close()
+    logFile = None
+    if not args.test and outputNamePrefix != None:
         logStep("Renaming 'logFile.html' to '" + outputNamePrefix + "-buildlog.html'")
-        global logFile
-        logFile.close()
-        logFile = None
         shellExec(unstableDir, "mv logFile.html " + outputPathPrefix + "-buildlog.html")
 
 if args.test:
+    buildNumberIncremented = True # avoid side effect when testing
     unstableDir = buildDir + "/" + testName
     stableDir = unstableDir
     if (os.path.exists(bbDir)):
@@ -296,11 +335,8 @@ log("<h2>Build " + str(buildNum) + " from '" + branch + "' at " + buildDate + "<
 log("<h3>git commit hash: " + commitHash + "</h3>")
 
 logStep("Cloning repository into temporary folder '" + bbName + "'")
-shellExec(buildDir, "git clone " + localRepository + " " + bbDir)
-
-if branch != "master":
-    logStep("Checking out branch '" + branch + "'")
-    shellExec(bbDir, "git checkout " + branch, False)
+# option -q suppresses the progress reporting on stderr
+shellExec(buildDir, "git clone -q --branch " + branch + " " + localRepository + " " + bbDir)
 
 if not os.path.exists(appbuildDir + "/AppVersion.txt"):
     cleanup() # if not args.test
@@ -327,6 +363,7 @@ buildBbscript()
 compileAndLink() #3
 appendSystemProperties()
 updateBbscript()
+addChanges()
 buildSetupFile()
 buildZipFile()
 # if not args.test
