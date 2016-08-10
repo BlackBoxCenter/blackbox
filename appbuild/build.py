@@ -237,7 +237,6 @@ def addChanges():
     if branch == "master" or args.test:
         logStep("downloading xml files from Redmine")
         versions_file = bbDir + "/blackbox_versions.xml"
-        issues_file = bbDir + "/blackbox_issues.xml"
         url = "http://redmine.blackboxframework.org/projects/blackbox/versions.xml"
         with open(versions_file, 'wb') as out_file:
             out_file.write(urllib2.urlopen(url).read())
@@ -246,12 +245,17 @@ def addChanges():
         fixed_version_id = get_fixed_version_id(versions_file, target)
         # status_id=5 means 'Closed', limit above 100 is not supported by Redmine
         url = "http://redmine.blackboxframework.org/projects/blackbox/issues.xml?status_id=5&fixed_version_id=" + fixed_version_id + "&offset=0&limit=100"
-        with open(issues_file, 'wb') as out_file:
+        issues_file1 = bbDir + "/blackbox_issues100.xml"
+        with open(issues_file1, 'wb') as out_file:
+            out_file.write(urllib2.urlopen(url).read())
+        url = "http://redmine.blackboxframework.org/projects/blackbox/issues.xml?status_id=5&fixed_version_id=" + fixed_version_id + "&offset=100&limit=100"
+        issues_file2 = bbDir + "/blackbox_issues200.xml"
+        with open(issues_file2, 'wb') as out_file:
             out_file.write(urllib2.urlopen(url).read())
         logStep("converting to BlackBox_" + appVersion + "_Changes.odc/.html")
         bbres = call(bbchanges + " >" + bbDir + "/wine_out.txt 2>&1", shell=True)
         logStep("removing xml files")
-        shellExec(".", "rm " + versions_file + " " + issues_file)
+        shellExec(".", "rm " + versions_file + " " + issues_file1 + " " + issues_file2)
         logStep("moving file BlackBox_" + appVersion + "_Changes.html to outputDir")
         shellExec(".", "mv " + bbDir + "/BlackBox_" + appVersion + "_Changes.html " + outputPathPrefix + "-changes.html")
 
