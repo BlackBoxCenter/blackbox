@@ -360,7 +360,7 @@ outputPathPrefix = outputDir + "/" + outputNamePrefix
 if stableRelease and os.path.exists(outputPathPrefix + ".zip"):
     #for rebuilding a stable release remove the output files manually from the stable dir
     cleanup() # if not args.test
-    logStep('Cannot rebuild stable release " + appVersion + ".')
+    logStep('Cannot rebuild stable release ' + appVersion + '.')
     print "Cannot rebuild stable release " + appVersion + ".<br/>" # goes to buildlog.html
     sys.exit()
 if not os.path.exists(outputDir):
