@@ -311,6 +311,23 @@ def renameLog():
         logStep("Renaming 'logFile.html' to '" + outputNamePrefix + "-buildlog.html'")
         shellExec(unstableDir, "mv logFile.html " + outputPathPrefix + "-buildlog.html")
 
+def start_build():
+    prepareCompileAndLink()
+    compileAndLink() #1
+    buildBbscript()
+    compileAndLink() #2
+    buildBbscript()
+    compileAndLink() #3
+    appendSystemProperties()
+    updateBbscript()
+    addChanges()
+    buildSetupFile()
+    buildZipFile()
+
+# if not args.test
+incrementBuildNumber()
+cleanup()
+renameLog()
 if args.test:
     buildNumberIncremented = True # avoid side effect when testing
     unstableDir = buildDir + "/" + testName
@@ -367,19 +384,7 @@ if stableRelease and os.path.exists(outputPathPrefix + ".zip"):
     sys.exit()
 if not os.path.exists(outputDir):
     shellExec(buildDir, "mkdir " + outputDir)
+    
+    start_build()
 
-prepareCompileAndLink()
-compileAndLink() #1
-buildBbscript()
-compileAndLink() #2
-buildBbscript()
-compileAndLink() #3
-appendSystemProperties()
-updateBbscript()
-addChanges()
-buildSetupFile()
-buildZipFile()
-# if not args.test
-incrementBuildNumber()
-cleanup()
-renameLog()
+
