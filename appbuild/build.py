@@ -1,33 +1,34 @@
-#!/usr/bin/python
-#
-# Python 2.7 script for building the BlackBox Component Builder for Windows under Linux Debian 7.
-# Looks at all branches and puts the output into the branch's output folder 'unstable/<branch>'
-# unless building a stable (final) release, which is always put into folder 'stable'.
-# A stable release is one that does not have a development phase in appVersion and that is built for branch 'master'.
-#
-# Ivan Denisov, Josef Templ
-#
-# use: "build.py -h" to get a short help text
-#
-# Creates 3 files in case of success:
-# 1. a build log file named blackbox-<AppVersion>.<buildnr>-buildlog.html
-# 2. a Windows installer file named blackbox-<AppVersion>.<buildnr>-setup.exe
-# 3. a zipped package named blackbox-<AppVersion>-<buildnr>.zip
-# In case of building a final release, buildnr is not included.
-# In case building was started for a branch, updates the branch's last-build-commit hash.
-# In case of successfully finishing the build, increments the global build number.
-#
-# By always rebuilding bbscript.exe it avoids problems with changes in the symbol or object file formats
-# and acts as a rigorous test for some parts of BlackBox, in particular for the compiler itself.
-# This script uses the general purpose 'bbscript' scripting engine for BlackBox, which
-# can be found in the subsystem named 'Script'.
-#
-# Error handling:
-# Stops building when shellExec writes to stderr, unless stopOnError is False.
-# Stops building when there is an error reported by bbscript.
-# Stops building when there is a Python exception.
-# The next build will take place upon the next commit.
-#
+#!/usr/bin/env python27
+"""
+Python 2.7 script for building the BlackBox Component Builder for Windows under Linux Debian 7.
+Looks at all branches and puts the output into the branch's output folder 'unstable/<branch>'
+unless building a stable (final) release, which is always put into folder 'stable'.
+A stable release is one that does not have a development phase in appVersion and that is built for branch 'master'.
+
+Ivan Denisov, Josef Templ
+
+use: "build.py -h" to get a short help text
+
+Creates 3 files in case of success:
+    1. a build log file named blackbox-<AppVersion>.<buildnr>-buildlog.html
+    2. a Windows installer file named blackbox-<AppVersion>.<buildnr>-setup.exe
+    3. a zipped package named blackbox-<AppVersion>-<buildnr>.zip
+    In case of building a final release, buildnr is not included.
+    In case building was started for a branch, updates the branch's last-build-commit hash.
+    In case of successfully finishing the build, increments the global build number.
+
+By always rebuilding bbscript.exe it avoids problems with changes in the symbol or object file formats
+and acts as a rigorous test for some parts of BlackBox, in particular for the compiler itself.
+This script uses the general purpose 'bbscript' scripting engine for BlackBox, which
+can be found in the subsystem named 'Script'.
+
+Error handling:
+    Stops building when shellExec writes to stderr, unless stopOnError is False.
+    Stops building when there is an error reported by bbscript.
+    Stops building when there is a Python exception.
+    The next build will take place upon the next commit.
+"""
+
 # TODO git checkout reports a message on stderr but it works, so it is ignored
 
 from subprocess import Popen, PIPE, call
