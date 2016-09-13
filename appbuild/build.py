@@ -1,4 +1,5 @@
 #!/usr/bin/env python27
+# -*- coding: utf8 -*-
 """
 Python 2.7 script for building the BlackBox Component Builder for Windows under Linux Debian 7.
 Looks at all branches and puts the output into the branch's output folder 'unstable/<branch>'
