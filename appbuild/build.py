@@ -323,11 +323,12 @@ def start_build():
     addChanges()
     buildSetupFile()
     buildZipFile()
+    
+    # if not args.test
+    incrementBuildNumber()
+    cleanup()
+    renameLog()
 
-# if not args.test
-incrementBuildNumber()
-cleanup()
-renameLog()
 if args.test:
     buildNumberIncremented = True # avoid side effect when testing
     unstableDir = buildDir + "/" + testName
