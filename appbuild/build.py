@@ -2,7 +2,8 @@
 #
 # Python 2.7 script for building the BlackBox Component Builder for Windows under Linux Debian 7.
 # Looks at all branches and puts the output into the branch's output folder 'unstable/<branch>'
-# unless building a final release, which is always put into folder 'stable'.
+# unless building a stable (final) release, which is always put into folder 'stable'.
+# A stable release is one that does not have a development phase in appVersion and that is built for branch 'master'.
 #
 # Ivan Denisov, Josef Templ
 #
@@ -163,8 +164,8 @@ def getVersionInfoVersion(appVersion, buildNum):
     v2 = v[2] if len(v) > 2 else "0"
     return v0 + "." + v1 + "." + v2 + "." + str(buildNum)
 
-def isFinal(appVersion):
-    return appVersion.find("-") < 0
+def isStable(appVersion):
+    return appVersion.find("-") < 0 and branch == "master"
 
 def prepareCompileAndLink():
     logStep("Preparing BlackBox.rc")
@@ -352,10 +353,16 @@ print "<br/>Build " + str(buildNum) + " from '" + branch + "' at " + buildDate +
 appVersion = open(appbuildDir + "/AppVersion.txt", "r").readline().strip()
 appVerName = getAppVerName(appVersion)
 versionInfoVersion = getVersionInfoVersion(appVersion, buildNum)
-finalRelease = isFinal(appVersion)
-outputNamePrefix = "blackbox-" + appVersion + ("" if finalRelease else ("." + str(buildNum).zfill(3)))
-outputDir = stableDir if finalRelease else unstableDir + "/" + branch
+stableRelease = isStable(appVersion)
+outputNamePrefix = "blackbox-" + appVersion + ("" if stableRelease else ("." + str(buildNum).zfill(3)))
+outputDir = stableDir if stableRelease else unstableDir + "/" + branch
 outputPathPrefix = outputDir + "/" + outputNamePrefix
+if stableRelease and os.path.exists(outputPathPrefix + ".zip"):
+    #for rebuilding a stable release remove the output files manually from the stable dir
+    cleanup() # if not args.test
+    logStep('Cannot rebuild stable release " + appVersion + ".')
+    print "Cannot rebuild stable release " + appVersion + ".<br/>" # goes to buildlog.html
+    sys.exit()
 if not os.path.exists(outputDir):
     shellExec(buildDir, "mkdir " + outputDir)
 
