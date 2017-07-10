@@ -271,8 +271,8 @@ def buildSetupFile():
                   + '" "/dAppVerName=' + appVerName
                   + '" "/dVersionInfoVersion=' + versionInfoVersion
                   + '"', False) # a meaningless error is displayed
-    shellExec(bbDir, "mv Output/setup.exe " + outputPathPrefix + "-setup.exe")
-    shellExec(bbDir, "rm -R Output")
+    shellExec(bbDir, "mv Output/setup.exe " + outputPathPrefix + "-setup.exe", not args.test)
+    shellExec(bbDir, "rm -R Output", not args.test)
 
 def buildZipFile():
     deleteBbFile("LICENSE.txt")
