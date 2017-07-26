@@ -16,8 +16,8 @@
 # In case of building a final release, buildnr is not included.
 # In case building was started for a branch, updates the branch's last-build-commit hash.
 # In case of successfully finishing the build, increments the global build number.
-# For downloadable zip and exe files, additional files with file name appendix ".sha256" are created.
-# They contain the SHA-256 key for the downloadable file, which allows for manually checking the file integrity.
+# For downloadable zip and exe files, additional files with file name appendix "_sha256.txt" are created.
+# They contain the SHA-256 key for the respective file, which allows for manually checking the file's integrity.
 #
 # By always rebuilding bbscript.exe it avoids problems with changes in the symbol or object file formats
 # and acts as a rigorous test for some parts of BlackBox, in particular for the compiler itself.
@@ -202,7 +202,7 @@ def compileAndLink():
     logStep("Compiling and linking BlackBox")
     runbbscript("Dev/Docu/Build-Tool.odc")
     shellExec(bbDir, "mv BlackBox2.exe BlackBox.exe && mv Code System/ && mv Sym System/")
-    shellExec(bbDir, "sha256sum BlackBox.exe > BlackBox.exe.sha256")
+    shellExec(bbDir, "sha256sum BlackBox.exe > BlackBox.exe_sha256.txt")
 
 def buildBbscript():
     logStep("Incrementally building BlackBox scripting engine bbscript.exe")
@@ -275,14 +275,14 @@ def buildSetupFile():
                   + '" "/dVersionInfoVersion=' + versionInfoVersion
                   + '"', False) # a meaningless error is displayed
     shellExec(bbDir, "mv Output/setup.exe " + outputPathPrefix + "-setup.exe", not args.test)
-    shellExec(outputDir, "sha256sum " + outputNamePrefix + "-setup.exe > " + outputNamePrefix + "-setup.exe.sha256", not args.test)
+    shellExec(outputDir, "sha256sum " + outputNamePrefix + "-setup.exe > " + outputNamePrefix + "-setup.exe_sha256.txt", not args.test)
     shellExec(bbDir, "rm -R Output", not args.test)
 
 def buildZipFile():
     deleteBbFile("LICENSE.txt")
     logStep("Zipping package to file " + outputNamePrefix + ".zip")
     shellExec(bbDir, "zip -r " + outputPathPrefix + ".zip *")
-    shellExec(outputDir, "sha256sum " + outputNamePrefix + ".zip > " + outputNamePrefix + ".zip.sha256")
+    shellExec(outputDir, "sha256sum " + outputNamePrefix + ".zip > " + outputNamePrefix + ".zip_sha256.txt")
 
 def updateCommitHash():
     if not args.test:
