@@ -217,9 +217,10 @@ def appendSystemProperties():
     shellExec(appbuildDir, "sed s/{#FileVersion}/" + versionInfoVersion + "/ < appendProps.txt > appendProps_.txt")
     shellExec(appbuildDir, "sed s/{#BuildNum}/" + str(buildNum) + "/ < appendProps_.txt > appendProps.txt")
     shellExec(appbuildDir, "sed s/{#BuildDate}/" + buildDate[:10] + "/ < appendProps.txt > appendProps_.txt")
-    shellExec(appbuildDir, "sed s/{#CommitHash}/" + commitHash + "/ < appendProps_.txt > appendProps.txt")
+    shellExec(appbuildDir, 'sed s/{#BuildBranch}/"' + branch + '"/ < appendProps_.txt > appendProps.txt')
+    shellExec(appbuildDir, "sed s/{#CommitHash}/" + commitHash + "/ < appendProps.txt > appendProps_.txt")
     logStep("Appending version properties to System/Rsrc/Strings.odc")
-    runbbscript("appbuild/appendProps.txt")
+    runbbscript("appbuild/appendProps_.txt")
 
 def updateBbscript():
     if not args.test and branch == "master":
